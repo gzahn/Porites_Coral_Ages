@@ -1,0 +1,6 @@
+Only deal with samples from P lutea, not turf algae
+16S dada2 protocol
+
+merge fwd and rev reads
+
+
