@@ -1,7 +1,7 @@
 [1] "Bray-Curtis distance regressed against spatial distance:"
 $coef
                    bray       pval
-Int           0.8071386 0.99759976
+Int           0.8071386 0.99699970
 spatial.dist 68.1420793 0.00010001
 
 $r.squared

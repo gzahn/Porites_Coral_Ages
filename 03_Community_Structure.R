@@ -62,9 +62,21 @@ print(dist_MRM)
 sink(NULL)
 
 
-# Ordination ####
+# Ordinations ####
 ord <- ordinate(ps_ra,method = "PCoA")
 plot_ordination(ps_ra,ord,color="CoralAgeBinned")
+ggsave("./output/figs/PCoA_CoralAgeGroups.png")
+
+plot_ordination(ps_ra,ord,color="Location")
+ggsave("./output/figs/PCoA_Location.png")
+
+growthrate <- cut(meta$Average_LE_mm, breaks = 3)
+growthrate <- plyr::mapvalues(growthrate,from = levels(growthrate), to=c("Low","Med","High"))
+ps_ra@sam_data$GrowthRateCat <- growthrate
+
+plot_ordination(ps_ra,ord,color="GrowthRateCat") + labs(color="Growth Rate")
+ggsave("./output/figs/PCoA_GrowthRate.png")
+
 
 # Non-metric multidimensional scaling ####
 bray.nmds <- monoMDS(bray)
@@ -83,9 +95,17 @@ nmds.df <- (cbind(meta,nmds))
 
 # plot NMDS results
 
-ggplot(nmds.df, aes(x=Bray.X,y=Bray.Y,color=CoralAgeBinned)) +
+ggplot(nmds.df, aes(x=Bray.X,y=Bray.Y,color=Location)) +
   geom_point()
+ggsave("./output/figs/NMDS_Location.png")
 
+# ADONIS ####
+perm.mod <- adonis(otu ~ meta$Location)
+
+sink("./output/PermANOVA_Table.txt")
+perm.mod
+print("Location is a significant factor in bacterial community structure.")
+sink(NULL)
 
 # Network plot ####
 ig=make_network(ps_ra, max.dist = .9)
