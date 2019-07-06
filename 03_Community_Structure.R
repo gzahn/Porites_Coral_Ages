@@ -48,6 +48,10 @@ spatial.dist = vegdist(cbind(meta$LON, meta$LAT))
 mantel.bray = mantel.rtest(spatial.dist, bray, nrepet = 999)
 mantel.jaccard = mantel.rtest(spatial.dist, jaccard, nrepet = 999)
 
+sink("./output/Mantel_Test.txt")
+mantel.bray
+sink(NULL)
+
 plot(mantel.bray)
 plot(mantel.jaccard)
 
