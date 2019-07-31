@@ -1,4 +1,4 @@
-# Porites lutea bacteria with coral ages and genotypes
+# _Porites lutea_ bacteria with coral ages and genotypes
 
 ### R scripts for data processing and analyses _(in this order)_
 
