@@ -53,7 +53,7 @@ ps.min <- subset_taxa(ps2, taxa_sums(ps2) >= 10)
 
 ord1=ordinate(ps.min,method = "NMDS",color="Species")
 plot_ordination(ps.min,ord1,color="Species") + stat_ellipse()
-
+ggsave("./output/Pacuta_vs_Plutea_NMDSPlot_draft.png")
 
 
 mds <- metaMDS(otu_table(ps.min))
@@ -78,16 +78,48 @@ plot(comm.dist)
 # Convert to presence-absence ####
 ps_pa <- transform_sample_counts(ps.min, function(abund) 1*(abund>0))
 
-heatmap(t(as.matrix(otu_table(ps_pa))))
+
+# prepare data for heatmap and plot ####
+pa = as(t(otu_table(ps_pa)),"matrix")
+
+cols = plyr::mapvalues(ps_pa@sam_data$Species,from=unique(ps_pa@sam_data$Species),to=c("Blue","Red"))
+
+heatmap(pa,Rowv = NA,ColSideColors = cols,Colv = NA)
+
+# Blue = P lutea, Red = P acuta
+heatmap(t(as.matrix(otu_table(ps_pa))),Rowv = NA,ColSideColors = cols,Colv = NA, labRow = NA, col = gray.colors(2))
 
 
-# Calculate distance matrix
-comm.dist <- vegdist(otu_table(ps_pa),method = "jaccard")
+# Find genera tha overlap between species of corals ####
 
-mds <- metaMDS(otu_table(ps_pa),distance = "jaccard")
-plot(comm.dist)
-stressplot(mds)
+Plutea.cols = grep("ABB",x = colnames(pa))
+Pacuta.cols = grep("AOO",x = colnames(pa))
+Plutea.matrix = pa[,Plutea.cols]
+Pacuta.matrix = pa[,Pacuta.cols]
 
-# PermANOVA
+shared.genera = rowSums(Plutea.matrix) > 0 & rowSums(Pacuta.matrix) > 0
+shared.genera = which(shared.genera == TRUE)
+sink("./output/shared_Genera_Pactua-Plutea.txt")
+ps_pa@tax_table[shared.genera,]
+sink(NULL)
+
+
+# Prep shared taxa data frame
+shared.genera.names = c(ps_pa@tax_table[shared.genera,"Genus"])
+shared.family.names = c(ps_pa@tax_table[shared.genera,"Family"])
+shared.order.names = c(ps_pa@tax_table[shared.genera,"Order"])
+shared.phylum.names = c(ps_pa@tax_table[shared.genera,"Phylum"])
+
+df.shared.taxa <- data.frame(Genus = shared.genera.names,Family = shared.family.names,Order=shared.order.names,Phylum=shared.phylum.names)
+
+# Bar plot, colored by phylum
+ggplot(df.shared.taxa) + geom_bar(aes(x=reorder(Order,Order,function(x)-length(x)),fill=Phylum)) +
+  theme(axis.text.x = element_text(angle=90),
+        axis.title = element_text(face="bold")) + 
+  labs(x="Order",y="Shared Count")
+ggsave("./output/figs/Shared_Genera_Pacuta-Plutea_within_each-order.png",dpi=300)
+
+
+# PermANOVA ####
 mod1 <- adonis(otu_table(ps) ~ sample_data(ps)$Species + sample_data(ps)$ReadDepth)
 mod1

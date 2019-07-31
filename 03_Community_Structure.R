@@ -1,5 +1,8 @@
 # --------------------------------------------------------------#
-# Porites 16S Analyses - Depends on "01_Process_Raw_Reads.R"
+# Porites 16S Analyses - Beta diversity and community structure
+# 
+# Depends on "01_Process_Raw_Reads.R"
+# 
 # Author: Geoffrey Zahn
 # --------------------------------------------------------------#
 
@@ -15,6 +18,9 @@ library(modelr)
 library(lme4)
 library(patchwork)
 library(igraph)
+library(rsq)
+library(microbiome)
+
 
 # functions
 source("./R/plot_bar2.R")
@@ -40,7 +46,21 @@ jaccard = vegdist(otu,method = "jaccard", binary = TRUE)
 # Plot community dist vs age dist ####
 age <- dist(meta$CoralAge)
 ggplot(mapping=aes(x=age,y=bray)) + geom_point(alpha=.2) + 
-  geom_smooth(method = "lm") + theme_bw() + labs(x="Coral Age Distance",y="Bray-Curtis Distance")
+  geom_smooth(method = "lm") + theme_bw() + labs(x="Coral Age Distance (Years)",y="Bray-Curtis Distance")
+ggsave("See Coral_Age_Dist_vs_Community_Dist_Plot.png",dpi=300)
+
+
+# Quick glm model
+mod1 = glm(bray~age)
+
+# write results to file
+sink("./output/Age_Distance_vs_Community_Distance_GLM-Table.txt")
+print("Bacterial community dissimilarity as a function of coral age distance...")
+summary(mod1)
+print("Corals of more similar ages have more similar bacterial communities.")
+paste0("This is a significant (P = ", signif(coef(summary(mod1))[2,4],4),"), but weak (R-sq = ",signif(rsq(mod1),4),") relationship.")
+print("See Coral_Age_Dist_vs_Community_Dist_Plot.png")
+sink(NULL)
 
 
 # Mantel Test ####
@@ -61,25 +81,47 @@ dist_MRM <- MRM(bray ~ spatial.dist,  nperm = 9999)
 age_MRM <- MRM(bray ~ age,  nperm = 999)
 
 sink("./output/MRM_Table.txt")
-print("Bray-Curtis distance regressed against spatial distance:")
+print("Bray-Curtis distance regressed against spatial distance (Multiple regression on matrices):")
 print(dist_MRM)
+print("Geographic distance is positively associated with bacterial community distance.")
 sink(NULL)
 
 
 # Ordinations ####
+
+# Subset ps_ra to only samples with defined coral ages...need to re-load fresh RDS later
+ps_ra <- subset_samples(ps_ra,!is.na(ps_ra@sam_data$CoralAgeBinned))
+
 ord <- ordinate(ps_ra,method = "PCoA")
-plot_ordination(ps_ra,ord,color="CoralAgeBinned")
-ggsave("./output/figs/PCoA_CoralAgeGroups.png")
+
+plot_ordination(ps_ra,ord,color="CoralAgeBinned") +
+  scale_color_discrete(limits=c("10 to 20","21 to 30","31 to 40",
+                            "41 to 50","51 to 60","61 to 70",
+                            "81 to 90","82 to 90","91 to 100",
+                            "101 to 110")) + 
+  theme_bw() + labs(color="Coral age group")
+ggsave("./output/figs/PCoA_CoralAgeGroups.png",dpi=300,height = 8,width = 8)
 
 plot_ordination(ps_ra,ord,color="Location")
 ggsave("./output/figs/PCoA_Location.png")
+
+
+# re-load ps_ra
+ps_ra <- readRDS("./output/phyloseq_cleaned_relabund.RDS")
 
 growthrate <- cut(meta$Average_LE_mm, breaks = 3)
 growthrate <- plyr::mapvalues(growthrate,from = levels(growthrate), to=c("Low","Med","High"))
 ps_ra@sam_data$GrowthRateCat <- growthrate
 
-plot_ordination(ps_ra,ord,color="GrowthRateCat") + labs(color="Growth Rate")
-ggsave("./output/figs/PCoA_GrowthRate.png")
+# subset to remove NA values .. re-load later
+ps_ra <- subset_samples(ps_ra,!is.na(ps_ra@sam_data$GrowthRateCat))
+ord <- ordinate(ps_ra,method = "PCoA")
+
+plot_ordination(ps_ra,ord,color="GrowthRateCat") + labs(color="Growth Rate") + theme_bw()
+ggsave("./output/figs/PCoA_GrowthRate.png",dpi=300, height = 8,width = 8)
+
+# re-load
+ps_ra <- readRDS("./output/phyloseq_cleaned_relabund.RDS")
 
 
 # Non-metric multidimensional scaling ####
@@ -100,8 +142,12 @@ nmds.df <- (cbind(meta,nmds))
 # plot NMDS results
 
 ggplot(nmds.df, aes(x=Bray.X,y=Bray.Y,color=Location)) +
-  geom_point()
-ggsave("./output/figs/NMDS_Location.png")
+  geom_point() + theme_bw() 
+ggsave("./output/figs/NMDS_Location_Bray.png",dpi=300,height = 8,width = 8)
+
+
+ggplot(nmds.df, aes(x=Jaccard.X,y=Jaccard.Y,color=Location)) +
+  geom_point() + theme_bw()
 
 # ADONIS ####
 perm.mod <- adonis(otu ~ meta$Location)
@@ -112,11 +158,57 @@ print("Location is a significant factor in bacterial community structure.")
 sink(NULL)
 
 # Network plot ####
-ig=make_network(ps_ra, max.dist = .9)
+ig=make_network(ps_ra, max.dist = .8)
+set.seed(13)
 plot_network(ig, physeq = ps_ra, color = "Location",label = NULL,point_size = 2)
-ggsave("./Output/Network_Jaccard.png", dpi=300, height = 12, width = 18)
+ggsave("./output/figs/Network_Jaccard.png", dpi=300, height = 12, width = 18)
 
 
+# Core microbiome ####
+
+# find core members of oral microbiome ####
+# Core with compositionals:
+det <- c(0, 0.1, 0.5, 2, 5, 20)/100
+prevalences <- seq(.05, 1, .05)
+plot_core(ps_ra, prevalences = prevalences, detections = det, plot.type = "lineplot") + xlab("Relative Abundance")
+ggsave("./output/figs/CoreSize_vs_RelativeAbundance.png", dpi = 300)
+
+detections <- 10^seq(log10(1e-3), log10(.2), length = 10)
+
+# Also define gray color palette
+gray <- gray(seq(0,1,length=10))
+plot_core(ps_ra, plot.type = "heatmap", colours = gray,
+               prevalences = prevalences, detections = detections) +
+  xlab("Detection Threshold (Relative Abundance (%))")
+print(p)    
+
+
+# Core heatmap
+prevalences <- seq(.05, .5, .05)
+detections <- 10^seq(log10(1e-3), log10(.2), length = 10)
+
+p <- plot_core(ps_ra, plot.type = "heatmap", 
+               prevalences = prevalences,
+               detections = detections,
+               colours = rev(brewer.pal(5, "Spectral")),
+               min.prevalence = .1, horizontal = TRUE)
+print(p)
+ggsave("./16S/output/Core_Heatmap.png", dpi=300)
+
+# prevalence
+taxa_prevalence = (prevalence(ps_ra, detection = 0.001, sort = TRUE))
+
+# core members at >= 0.2 sample prevalence 0.01% detection threshold
+core.taxa.standard <- core_members(ps_ra, detection = 0.001, prevalence = .1)
+
+# Total core abundance in each sample (sum of abundances of the core members):
+ps_core <- core(ps_ra, detection = 0.001, prevalence = .1)
+# subset to only samples containing core microbiome
+ps_core_samples = subset_samples(ps_core,rowSums(otu_table(ps_core)) > 0)
+
+nmds_core = ordinate(ps_core_samples, "NMDS")
+plot_ordination(ps_core_samples, nmds_core, color = "Diet") +
+  stat_ellipse()
 
 # coral age vs community structure
 # plot the unbinned coral age against ESV richness or something similar
@@ -128,8 +220,6 @@ ggsave("./Output/Network_Jaccard.png", dpi=300, height = 12, width = 18)
 # structure bacterial community in addition to the the standard biogeog stuff we have been doing.
 # x=age,y=richness,facet=location
 
-# include location / size in model?
-# mantel test to rule out? location as factor instead of age
 
 dim(otu_table(ps_ra))
 dim(sample_data(ps_ra))

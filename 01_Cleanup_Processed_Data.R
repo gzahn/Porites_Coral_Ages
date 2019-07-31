@@ -1,3 +1,10 @@
+# --------------------------------------------------------------#
+# Porites 16S Analyses - Cleanup Phyloseq object for analyses
+# Depends on "00_Process_Raw_Reads.R" 
+# 
+# Author: Geoffrey Zahn
+# --------------------------------------------------------------#
+
 # Packages
 library(phyloseq)
 library(tidyverse)
@@ -8,7 +15,7 @@ ps <- readRDS("./output/phyloseq_object_16S.RDS")
 
 # Housekeeping ####
 # Rename metadata columns
-names(ps@sam_data) <- c("Multiplex ID","Library ID","SampleID","Location","Country","Species","CoralAge","CoralAgeBinned","Average_LE_mm","GPS","Control")
+names(ps@sam_data) <- c("Multiplex ID","Library ID","SampleID","Location","Country","Species","CoralAge","CoralAgeBinned","Average_LE_mm","GPS","Control","Genotype")
 # Add Lat/Lon columns
 LAT <- unlist(map(str_split(ps@sam_data$GPS,pattern = " "),1))
 LON <- unlist(map(str_split(ps@sam_data$GPS,pattern = " "),2))
@@ -17,6 +24,7 @@ LON <- str_remove(LON,"E")
 ps@sam_data$LAT <- as.numeric(LAT)
 ps@sam_data$LON <- as.numeric(LON)
 meta = as.data.frame(sample_data(ps))
+
 
 # Subset taxa to bacteria only (remove eukaryotes)
 table(tax_table(ps)[,1])
@@ -32,4 +40,6 @@ saveRDS(ps,"./output/phyloseq_object_16S_cleaned.RDS")
 
 # Normalize with relative abundance
 ps_ra <- transform_sample_counts(ps, function(x) x / sum(x) )
+
+# Save relabund phyloseq object
 saveRDS(ps_ra,"./output/phyloseq_cleaned_relabund.RDS")

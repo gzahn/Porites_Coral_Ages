@@ -1,7 +1,13 @@
+# -------------------------------------------------------------------#
+# Porites 16S Analyses - Create phyloseq object from raw 16S reads
+# 
+# Author: Geoffrey Zahn
+# -------------------------------------------------------------------#
+
 # Process Raw 16S reads ####
 
 
-# Load dada2 and prep ####
+# Load packages ####
 library(dada2); packageVersion("dada2")
 library(vegan)
 library(tidyverse)
@@ -28,12 +34,12 @@ filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
 filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
 
 # Filter and trim ####
-# cut fwd reads at 290 and rev reads at 160
+# cut fwd reads at 260 and rev reads at 200
 out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(260,200),
                      maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,
                      compress=TRUE, multithread=TRUE)
 
-# reassign filts for lost samples
+# reassign filts for lost samples, if any
 filtFs <- list.files("./fastqs/filtered", pattern = "_F_filt", full.names = TRUE)
 filtRs <- list.files("./fastqs/filtered", pattern = "_R_filt", full.names = TRUE)
 
@@ -75,7 +81,8 @@ seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE
 
 # Save progress
 saveRDS(seqtab.nochim,"./output/seqtab.nochim.RDS")
-# re-load point
+
+# re-load point for sequence table ####
 seqtab.nochim <- readRDS("./output/seqtab.nochim.RDS")
 
 # Track reads through pipeline ####
@@ -86,42 +93,24 @@ rownames(track) <- sample.names
 
 # Export results
 write.csv(track, file = "./output/tracked_reads.csv", quote = FALSE)
-# long.track = gather(as.data.frame(track), Step, Reads, 1:6)
-# 
-# # looks like merging is where a lot of reads are lost. Poor quality rev reads!  Just go with fwd reads
-# ggplot(long.track, aes(x=Step,y=Reads)) + geom_violin() +
-# theme_bw()
-# ggsave("./16S/output/tracked_reads.png")
-# 
-# # Generate new seqtable from just fwd reads ####
-# seqtab.fwd <- makeSequenceTable(dadaFs)
-# seqtab.fwd.nochim <- removeBimeraDenovo(seqtab.fwd, method="consensus", multithread=TRUE, verbose=TRUE)
-# 
-# # Save Data object
-# saveRDS(seqtab.fwd.nochim, "./output/seqtab.fwd.nochim.RDS")
-# 
-# # Re-load, if necessary
-# seqtab.fwd.nochim <- readRDS("./16S/output/seqtab.fwd.nochim.RDS")
 
-# remove all ASVs that don't have at least 2 hits
+
+# remove all ASVs that don't have at least 2 hits ####
 seqtab.nochim <- seqtab.nochim[,(colSums(seqtab.nochim) > 1)]
 
 # Assign taxonomy - Silva v132 exact match / 80% bootstrap min ####
 taxa <- assignTaxonomy(seqtab.nochim,"./taxonomy/silva_nr_v132_train_set.fa.gz", minBoot = 80,multithread = TRUE)
 saveRDS(taxa,"./output/taxa.RDS")
-# re-load point
-taxa <- readRDS("./output/taxa.RDS")
 
-# Optional .. keeps crashing!
-# taxa <- addSpecies(taxa, "./taxonomy/silva_species_assignment_v132.fa.gz")
-# saveRDS(taxa,"./output/taxa_exact.RDS")
+# re-load point for taxonomy ####
+taxa <- readRDS("./output/taxa.RDS")
 
 
 # rename seqtab object samples
 seqtab.df <- as.data.frame(seqtab.nochim)
 row.names(seqtab.df) <- map(strsplit(row.names(seqtab.df), "_"),1)
 
-# Create PhyloSeq object ####
+# Prepare for PhyloSeq object ####
 
 # read in metadata
 meta = read_csv("./metadata_edited.csv")
@@ -133,10 +122,10 @@ seqtab.nochim = seqtab.nochim[in.meta,]
 in.seqtab = which(meta$`Library ID` %in% names(seqtab.nochim[,1]))
 meta = meta[in.seqtab,]
 
-#re-order
+# re-order
 meta = meta[order(meta$`Library ID`),]
 row.names(meta) <- meta$`Library ID`
-# Check
+# Check 
 identical(row.names(seqtab.nochim), meta$`Library ID`)
 
 

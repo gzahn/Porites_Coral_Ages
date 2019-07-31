@@ -7,5 +7,5 @@ Based on 999 replicates
 Simulated p-value: 0.001 
 Alternative hypothesis: greater 
 
-    Std.Obs Expectation    Variance 
-6.940419167 0.001960839 0.001572722 
+     Std.Obs  Expectation     Variance 
+ 7.102623954 -0.001907233  0.001544214 

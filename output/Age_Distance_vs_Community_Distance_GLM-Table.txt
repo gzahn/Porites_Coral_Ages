@@ -1,0 +1,28 @@
+[1] "Bacterial community dissimilarity as a function of coral age distance..."
+
+Call:
+glm(formula = bray ~ age)
+
+Deviance Residuals: 
+     Min        1Q    Median        3Q       Max  
+-0.57526  -0.06874   0.03533   0.10508   0.17614  
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 0.8227229  0.0031956 257.454   <2e-16 ***
+age         0.0002845  0.0001296   2.196   0.0282 *  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+(Dispersion parameter for gaussian family taken to be 0.01887647)
+
+    Null deviance: 77.352  on 4094  degrees of freedom
+Residual deviance: 77.261  on 4093  degrees of freedom
+  (8625 observations deleted due to missingness)
+AIC: -4631.4
+
+Number of Fisher Scoring iterations: 2
+
+[1] "Corals of more similar ages have more similar bacterial communities."
+[1] "This is a significant (P = 0.02816), but weak (R-sq = 0.001177) relationship."
+[1] "See Coral_Age_Dist_vs_Community_Dist_Plot.png"
