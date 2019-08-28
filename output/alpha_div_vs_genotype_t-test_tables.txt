@@ -1,12 +1,8 @@
-
-> print("Shannon Diversity")
 [1] "Shannon Diversity"
-
-> t.test(shannon ~ meta$Genotype)
 
 	Welch Two Sample t-test
 
-data:  shannon by meta$Genotype
+data:  shannon$shannon by meta$Genotype
 t = 0.71244, df = 90.526, p-value = 0.478
 alternative hypothesis: true difference in means is not equal to 0
 95 percent confidence interval:
@@ -15,11 +11,7 @@ sample estimates:
 mean in group A mean in group B 
        2.942445        2.833097 
 
-
-> print("Species Richness")
 [1] "Species Richness"
-
-> t.test(richness ~ meta$Genotype)
 
 	Welch Two Sample t-test
 
@@ -32,22 +24,3 @@ sample estimates:
 mean in group A mean in group B 
        83.08889        68.16000 
 
-
-> print("Simpson Diversity")
-[1] "Simpson Diversity"
-
-> t.test(simpson ~ meta$Genotype)
-
-	Welch Two Sample t-test
-
-data:  simpson by meta$Genotype
-t = 0.79653, df = 105.22, p-value = 0.4275
-alternative hypothesis: true difference in means is not equal to 0
-95 percent confidence interval:
- -0.03139427  0.07355501
-sample estimates:
-mean in group A mean in group B 
-      0.8475241       0.8264437 
-
-
-> sink(NULL)

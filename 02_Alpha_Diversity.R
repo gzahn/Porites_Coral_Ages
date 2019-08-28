@@ -19,7 +19,8 @@ library(patchwork)
 library(ggmap)
 library(maps)
 library(rsq)
-
+library(ggpmisc)
+ggpmisc::
 # functions
 source("./R/plot_bar2.R")
 source("./R/summarize_taxa_Joey711.R")
@@ -51,23 +52,21 @@ corrplot(cor(meta.numeric), method = "color",title = "Correlation Between Coral 
 
 
 # Calculate alpha diversity measures ####
-shannon = diversity(otu,index = "shannon")
+shannon = diversity(t(otu),index = "shannon")
 richness = specnumber(otu)
-simpson = diversity(otu,index = "simpson")
+simpson = diversity(t(otu),index = "simpson")
 
 # Does genotype affect bacterial alpha diversity? ####
-mod.gen <- aov(shannon ~ meta$Genotype)
+mod.gen <- aov(shannon$shannon ~ meta$Genotype)
 summary(mod.gen)
 
 # Write t-test results to file
 
 sink("./output/alpha_div_vs_genotype_t-test_tables.txt")
 print("Shannon Diversity")
-t.test(shannon ~ meta$Genotype)
+t.test(shannon$shannon ~ meta$Genotype)
 print("Species Richness")
 t.test(richness ~ meta$Genotype)
-print("Simpson Diversity")
-t.test(simpson ~ meta$Genotype)
 sink(NULL)
 
 
@@ -81,17 +80,30 @@ mean.ages
 mod = aov(richness[aged] ~ CoralAge * Location, data = meta[aged,])
 summary(mod) # probable interaction between coral age and location
 
+sink("./output/richness_vs_CoralAge_and_Location_ANOVA.txt")
+summary(mod)
+sink(NULL)
                     # Richness
-p1 <- ggplot(meta[aged,],aes(x=CoralAge,y=richness[aged])) + 
+p1 = ggplot(meta[aged,],aes(x=CoralAge,y=richness[aged])) + 
   geom_smooth(method = "lm",se=FALSE,color="Red",alpha=.5,linetype=2) +
   geom_point() + 
+  stat_fit_glance(method = "lm", 
+                  label.x = "right",
+                  label.y = "top",
+                  aes(label = sprintf('R^2~"="~%.3f~"\n"~italic(P)~"="~%.2f',
+                                      stat(r.squared), stat(p.value))),
+                  parse = TRUE) +
   facet_grid(~Location) + theme_bw() +
-  labs(x="Coral Age (years)",y="ESV Richness") + theme(axis.title = element_text(face="bold",size = 14))
-ggsave(p1,filename = "./output/figs/RichnessLinear_Fit.png",dpi=300,device = "png")
+  labs(x="Coral Age (years)",y="ESV Richness") + theme(axis.title = element_text(face="bold",size = 14),
+                                                       strip.text = element_text(face="bold",size=10))
+
+  ggsave(p1,filename = "./output/figs/RichnessLinear_Fit.png",dpi=300,device = "png")
+
+  
 
 names(meta)
 # explore models
-meta.div <- cbind(meta,shannon,simpson,richness)
+meta.div <- cbind(meta,shannon$shannon,richness)
 mod1 = glm(data = meta.div, richness ~ CoralAge*Location)
 mod2 = glm(data = meta.div, richness ~ CoralAge+Location)
 mod3 = glm(data = meta.div, richness ~ ns(CoralAge,2)*Location)
@@ -116,41 +128,36 @@ gather_residuals(meta.div[aged,],mod1,mod2,mod3) %>%
 ggsave("./output/figs/RichnessModel_Residuals.png",dpi=300)
 
                     # Shannon
-p2 <- ggplot(meta[aged,],aes(x=CoralAge,y=shannon[aged])) + 
-  geom_smooth(method = "lm",se=FALSE,color="DarkOrange",alpha=.5,linetype=2) +
+p2 <- ggplot(meta[aged,],aes(x=CoralAge,y=shannon$shannon[aged])) + 
+  geom_smooth(method = "lm",se=FALSE,color="DodgerBlue",alpha=.5,linetype=2) +
   geom_point() + 
+  stat_fit_glance(method = "lm", 
+                  label.x = "right",
+                  label.y = "top",
+                  aes(label = sprintf('R^2~"="~%.3f~"\n"~italic(P)~"="~%.2f',
+                                      stat(r.squared), stat(p.value))),
+                  parse = TRUE) +
   facet_grid(~Location) + theme_bw() +
-  labs(x="Coral Age (Years)",y="Shannon Diversity") + theme(axis.title = element_text(face="bold",size = 14))
+  labs(x="Coral Age (Years)",y="Shannon Diversity") + theme(axis.title = element_text(face="bold",size = 14),
+                                                            strip.text = element_text(face="bold",size=10))
 ggsave(p2,filename = "./output/figs/ShannonLinear_Fit.png",dpi=300,device = "png")
 
 # explore models
-mod1 = glm(data = meta.div, shannon ~ CoralAge*Location)
-mod2 = glm(data = meta.div, shannon ~ CoralAge+Location)
-mod3 = glm(data = meta.div, shannon ~ ns(CoralAge,2)*Location)
-mod4 = glm(data = meta.div, shannon ~ CoralAge*Genotype)
-mod5 = glm(data = meta.div, shannon ~ CoralAge+Genotype)
+mod1 = glm(data = meta.div, shannon$shannon ~ CoralAge*Location)
+mod2 = glm(data = meta.div, shannon$shannon ~ CoralAge+Location)
+mod3 = glm(data = meta.div, shannon$shannon ~ ns(CoralAge,2)*Location)
 
 
 grid <- meta.div[aged,] %>% 
   data_grid(CoralAge,Location) %>% 
   gather_predictions(mod1, mod2, mod3)
 
-ggplot(meta.div[aged,], aes(x=CoralAge, y=shannon,group=Location,color=Location)) + 
+ggplot(meta.div[aged,], aes(x=CoralAge, y=`shannon$shannon`,group=Location,color=Location)) + 
   geom_point() +
   geom_line(data = grid,aes(y=pred)) +
-  facet_wrap(~ model) + theme_bw() + scale_color_manual(values=pal)
+  facet_wrap(~ model) + theme_bw() + scale_color_manual(values=pal) + labs(y="Shannon diversity",x="Coral age")
 ggsave("./output/figs/ShannonModel_Comparison.png",dpi=300)
 
-grid <- meta.div[aged,] %>% 
-  data_grid(CoralAge,Genotype) %>% 
-  gather_predictions(mod4, mod5)
-
-ggplot(meta.div[aged,], aes(x=CoralAge, y=shannon,group=Genotype,color=Genotype)) + 
-  geom_point() +
-  geom_line(data = grid,aes(y=pred)) +
-  facet_wrap(~ model) + theme_bw() + scale_color_manual(values=pal)
-
-summary(mod5)
 
 # Plot residuals
 gather_residuals(meta.div[aged,],mod1,mod2,mod3) %>%
@@ -158,51 +165,17 @@ gather_residuals(meta.div[aged,],mod1,mod2,mod3) %>%
   facet_grid(model~Location) + theme_bw() + scale_color_manual(values=pal)
 ggsave("./output/figs/ShannonModel_Residuals.png",dpi=300)
 
-# for genotype models
-gather_residuals(meta.div[aged,],mod4,mod5) %>%
-  ggplot(aes(x=CoralAge,y=resid,color=Genotype)) + geom_point() + geom_ref_line(h=0,size = .5,colour = "Black") +
-  facet_grid(model~Genotype) + theme_bw() + scale_color_manual(values=pal)
 
-
-                    # Simpson
-p3 <- ggplot(meta[aged,],aes(x=CoralAge,y=simpson[aged])) + 
-  geom_smooth(method = "lm",se=FALSE,color="Purple",alpha=.5,linetype=2) +
-  geom_point() + 
-  facet_grid(~Location) + theme_bw() +
-  labs(x="Coral Age (years)",y="Simpson Diversity") + theme(axis.title = element_text(face="bold",size = 14))
-ggsave(p3,filename = "./output/figs/SimpsonLinear_Fit.png",dpi=300,device = "png")
-
-# explore models
-mod1 = glm(data = meta.div, simpson ~ CoralAge*Location)
-mod2 = glm(data = meta.div, simpson ~ CoralAge+Location)
-mod3 = glm(data = meta.div, simpson ~ ns(CoralAge,2)*Location)
-# mod4 = lmer(data = meta.div, simpson ~ CoralAge * (1|Location))
-
-grid <- meta.div[aged,] %>% 
-  data_grid(CoralAge,Location) %>% 
-  gather_predictions(mod1, mod2, mod3)
-
-ggplot(meta.div[aged,], aes(x=CoralAge, y=simpson,group=Location,color=Location)) + 
-  geom_point() +
-  geom_line(data = grid,aes(y=pred)) +
-  facet_wrap(~ model) + theme_bw() + scale_color_manual(values=pal)
-ggsave("./output/figs/SimpsonModel_Comparison.png",dpi=300)
-
-# Plot residuals
-gather_residuals(meta.div[aged,],mod1,mod2,mod3) %>%
-  ggplot(aes(x=CoralAge,y=resid,color=Location)) + geom_point() + geom_ref_line(h=0,size = .5,colour = "Black") +
-  facet_grid(model~Location) + theme_bw() + scale_color_manual(values=pal)
-ggsave("./output/figs/SimpsonModel_Residuals.png",dpi=300)
 
 # Best Model ####
 
 # Merge all linear model fit plots for diversity measures
-p1+labs(x=NULL) + ggtitle("ESV Alpha Diversity") + 
+p3 = p1+labs(x=NULL) + ggtitle("ESV Alpha Diversity") + 
   theme(title = element_text(size=16,face="bold",hjust = .5)) +
-  p2+labs(x=NULL) +
-  p3 + 
+  p2+
   plot_layout(ncol=1) 
-ggsave("./output/figs/AlphaDiversity_over_CoralAge.png",dpi=300,height = 8,width = 12)
+
+ggsave(p3,filename = "./output/figs/AlphaDiversity_over_CoralAge.png",dpi=600,height = 8,width = 14,device = "png")
 
 
 # Best models:
@@ -310,8 +283,8 @@ ggsave("./output/figs/Barplot_Phylum_AgeClass.png",height = 10,width = 12,dpi=30
 
 
 # Boxplots of alpha diversity
-ggplot(meta.div[meta.div$Location %in% c("Jong","Kusu","Raffles Lighthouse","Semakau","Sisters"),],
-       aes(x=CoralAgeBinned,y=shannon,color=CoralAgeBinned)) + 
+meta.boxplot <- meta.div[meta.div$Location %in% c("Jong","Kusu","Raffles Lighthouse","Semakau","Sisters"),]
+ggplot(meta.boxplot, aes(x=CoralAgeBinned,y=`shannon$shannon`,color=CoralAgeBinned)) + 
   geom_boxplot() + theme_bw() + labs(color="Coral age group",x="Coral age group",y="Shannon diversity") +
   facet_wrap(~Location) + theme(axis.text.x = element_text(angle=90),
                                 legend.title = element_text(size=12,face="bold"),
@@ -322,8 +295,21 @@ ggplot(meta.div[meta.div$Location %in% c("Jong","Kusu","Raffles Lighthouse","Sem
                             "101 to 110"))
 ggsave("./output/figs/Shannon_Diversity_Boxplot_by_Age_and_Location.png", dpi=300, height = 8,width = 10)
 
-ggplot(meta.div[meta.div$Location %in% c("Jong","Kusu","Raffles Lighthouse","Semakau","Sisters"),],
-       aes(x=CoralAgeBinned,y=richness,color=CoralAgeBinned)) + 
+
+ggplot(meta.boxplot, aes(x=Location,y=`shannon$shannon`, fill=Location)) +
+  geom_boxplot() + theme_bw() + labs(fill="Location",x="Location",y="Shannon diversity") +
+  theme(axis.title = element_text(face="bold",size=12), legend.title = element_text(face="bold",size=12),
+        axis.text = element_text(size = 8,face="bold"))
+ggsave("./output/figs/Shannon_Diversity_by_Island.png",dpi=300,height = 6,width = 8)
+
+ggplot(meta.boxplot, aes(x=Location,y=richness, fill=Location)) +
+  geom_boxplot() + theme_bw() + labs(fill="Location",x="Location",y="ESV Richness") +
+  theme(axis.title = element_text(face="bold",size=12), legend.title = element_text(face="bold",size=12),
+        axis.text = element_text(size = 8,face="bold"))
+ggsave("./output/figs/ESV_Richness_by_Island.png",dpi=300,height = 6,width = 8)
+
+
+ggplot(meta.boxplot, aes(x=CoralAgeBinned,y=richness,color=CoralAgeBinned)) + 
   geom_boxplot() + theme_bw() + labs(color="Coral age group",x="Coral age group",y="Shannon diversity") +
   facet_wrap(~Location) + theme(axis.text.x = element_text(angle=90),
                                 legend.title = element_text(size=12,face="bold"),
