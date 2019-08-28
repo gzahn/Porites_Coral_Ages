@@ -282,6 +282,7 @@ plot_bar2(ps.Age.ra,fill = "Phylum") + theme_bw() +
 ggsave("./output/figs/Barplot_Phylum_AgeClass.png",height = 10,width = 12,dpi=300)
 
 
+
 # Boxplots of alpha diversity
 meta.boxplot <- meta.div[meta.div$Location %in% c("Jong","Kusu","Raffles Lighthouse","Semakau","Sisters"),]
 ggplot(meta.boxplot, aes(x=CoralAgeBinned,y=`shannon$shannon`,color=CoralAgeBinned)) + 
