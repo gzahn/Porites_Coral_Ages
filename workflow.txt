@@ -1,6 +1,8 @@
-Only deal with samples from P lutea, not turf algae
+Only deal with samples from P lutea, not turf algae (except for building ESVs and decontam)
 16S dada2 protocol
-
 merge fwd and rev reads
+use decontam to ID and remove contaminants (prevalence method) including turf algae samples
+
+
 
 
