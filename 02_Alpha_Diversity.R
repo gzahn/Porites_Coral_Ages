@@ -20,7 +20,7 @@ library(ggmap)
 library(maps)
 library(rsq)
 library(ggpmisc)
-ggpmisc::
+
 # functions
 source("./R/plot_bar2.R")
 source("./R/summarize_taxa_Joey711.R")
@@ -52,9 +52,8 @@ corrplot(cor(meta.numeric), method = "color",title = "Correlation Between Coral 
 
 
 # Calculate alpha diversity measures ####
-shannon = diversity(t(otu),index = "shannon")
+shannon = diversity((otu),index = "shannon")
 richness = specnumber(otu)
-simpson = diversity(t(otu),index = "simpson")
 
 # Does genotype affect bacterial alpha diversity? ####
 mod.gen <- aov(shannon$shannon ~ meta$Genotype)
@@ -103,7 +102,7 @@ p1 = ggplot(meta[aged,],aes(x=CoralAge,y=richness[aged])) +
 
 names(meta)
 # explore models
-meta.div <- cbind(meta,shannon$shannon,richness)
+meta.div <- cbind(meta,shannon,richness)
 mod1 = glm(data = meta.div, richness ~ CoralAge*Location)
 mod2 = glm(data = meta.div, richness ~ CoralAge+Location)
 mod3 = glm(data = meta.div, richness ~ ns(CoralAge,2)*Location)
@@ -128,7 +127,7 @@ gather_residuals(meta.div[aged,],mod1,mod2,mod3) %>%
 ggsave("./output/figs/RichnessModel_Residuals.png",dpi=300)
 
                     # Shannon
-p2 <- ggplot(meta[aged,],aes(x=CoralAge,y=shannon$shannon[aged])) + 
+p2 <- ggplot(meta[aged,],aes(x=CoralAge,y=shannon[aged])) + 
   geom_smooth(method = "lm",se=FALSE,color="DodgerBlue",alpha=.5,linetype=2) +
   geom_point() + 
   stat_fit_glance(method = "lm", 
@@ -143,16 +142,16 @@ p2 <- ggplot(meta[aged,],aes(x=CoralAge,y=shannon$shannon[aged])) +
 ggsave(p2,filename = "./output/figs/ShannonLinear_Fit.png",dpi=300,device = "png")
 
 # explore models
-mod1 = glm(data = meta.div, shannon$shannon ~ CoralAge*Location)
-mod2 = glm(data = meta.div, shannon$shannon ~ CoralAge+Location)
-mod3 = glm(data = meta.div, shannon$shannon ~ ns(CoralAge,2)*Location)
+mod1 = glm(data = meta.div, shannon ~ CoralAge*Location)
+mod2 = glm(data = meta.div, shannon ~ CoralAge+Location)
+mod3 = glm(data = meta.div, shannon ~ ns(CoralAge,2)*Location)
 
 
 grid <- meta.div[aged,] %>% 
   data_grid(CoralAge,Location) %>% 
   gather_predictions(mod1, mod2, mod3)
 
-ggplot(meta.div[aged,], aes(x=CoralAge, y=`shannon$shannon`,group=Location,color=Location)) + 
+ggplot(meta.div[aged,], aes(x=CoralAge, y=shannon,group=Location,color=Location)) + 
   geom_point() +
   geom_line(data = grid,aes(y=pred)) +
   facet_wrap(~ model) + theme_bw() + scale_color_manual(values=pal) + labs(y="Shannon diversity",x="Coral age")
@@ -230,6 +229,10 @@ ggsave("./output/figs/lmer_model_predictions_richness_v_age.png",dpi=300, width 
 
 # Load raw data
 ps <- readRDS("./output/phyloseq_object_16S_cleaned.RDS")
+
+# fix metadata typo
+ps@sam_data$CoralAgeBinned[ps@sam_data$CoralAgeBinned == "82 to 90"] <- "81 to 90"
+
 summary(colSums(otu_table(ps)))
 
 # Drop empty and low-abundance taxa
@@ -244,16 +247,21 @@ ps.Location@sam_data$Location <- unique(meta$Location)
 # Merge by Age Class
 # remove missing coral ages
 ps.ages <- subset_samples(ps,!is.na(CoralAgeBinned))
+
 ps.ages@sam_data$CoralAgeBinned <- factor(ps.ages@sam_data$CoralAgeBinned,
                                           levels = c("10 to 20","21 to 30","31 to 40",
                                                      "41 to 50","51 to 60","61 to 70",
-                                                     "81 to 90","82 to 90","91 to 100",
+                                                     "81 to 90","91 to 100",
                                                      "101 to 110"))
+
+
 ps.Age <- merge_samples(ps,group="CoralAgeBinned")
 ps.Age@sam_data$CoralAgeBinned <- levels(ps.ages@sam_data$CoralAgeBinned)
 # Convert to relabund
 ps.Location.ra <- transform_sample_counts(ps.Location,fun = function(x) x/sum(x))
 ps.Age.ra <- transform_sample_counts(ps.Age,fun = function(x) x/sum(x))
+sample_data(ps.Age.ra)
+
 
 # Change NA to "Unassigned"
 tax_table(ps.Location.ra)[,2][is.na(tax_table(ps.Location.ra)[,2])] <- "Unassigned"
@@ -272,7 +280,7 @@ plot_bar2(ps.Age.ra,fill = "Phylum") + theme_bw() +
   scale_fill_manual(values=pal) +
   scale_x_discrete(limits=c("10 to 20","21 to 30","31 to 40",
                             "41 to 50","51 to 60","61 to 70",
-                            "81 to 90","82 to 90","91 to 100",
+                            "81 to 90","91 to 100",
                             "101 to 110")) + 
   labs(x="Age Class",y="Relative Abundance") +
   theme(axis.text.x = element_text(angle=90,face="bold",size=10),
@@ -285,19 +293,20 @@ ggsave("./output/figs/Barplot_Phylum_AgeClass.png",height = 10,width = 12,dpi=30
 
 # Boxplots of alpha diversity
 meta.boxplot <- meta.div[meta.div$Location %in% c("Jong","Kusu","Raffles Lighthouse","Semakau","Sisters"),]
-ggplot(meta.boxplot, aes(x=CoralAgeBinned,y=`shannon$shannon`,color=CoralAgeBinned)) + 
-  geom_boxplot() + theme_bw() + labs(color="Coral age group",x="Coral age group",y="Shannon diversity") +
+
+ggplot(meta.boxplot, aes(x=CoralAgeBinned,y=shannon,fill=CoralAgeBinned)) + 
+  geom_boxplot() + theme_bw() + labs(fill="Coral age group",x="Coral age group",y="Shannon diversity") +
   facet_wrap(~Location) + theme(axis.text.x = element_text(angle=90),
                                 legend.title = element_text(size=12,face="bold"),
                                 axis.title = element_text(size=12,face="bold"),strip.text = element_text(face="bold")) +
   scale_x_discrete(limits=c("10 to 20","21 to 30","31 to 40",
                             "41 to 50","51 to 60","61 to 70",
-                            "81 to 90","82 to 90","91 to 100",
+                            "81 to 90","91 to 100",
                             "101 to 110"))
 ggsave("./output/figs/Shannon_Diversity_Boxplot_by_Age_and_Location.png", dpi=300, height = 8,width = 10)
 
 
-ggplot(meta.boxplot, aes(x=Location,y=`shannon$shannon`, fill=Location)) +
+ggplot(meta.div, aes(x=Location,y=shannon, fill=Location)) +
   geom_boxplot() + theme_bw() + labs(fill="Location",x="Location",y="Shannon diversity") +
   theme(axis.title = element_text(face="bold",size=12), legend.title = element_text(face="bold",size=12),
         axis.text = element_text(size = 8,face="bold"))

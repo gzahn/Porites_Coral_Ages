@@ -1,16 +1,4 @@
 [1] "Shannon Diversity"
-
-	Welch Two Sample t-test
-
-data:  shannon$shannon by meta$Genotype
-t = 0.71244, df = 90.526, p-value = 0.478
-alternative hypothesis: true difference in means is not equal to 0
-95 percent confidence interval:
- -0.1955502  0.4142462
-sample estimates:
-mean in group A mean in group B 
-       2.942445        2.833097 
-
 [1] "Species Richness"
 
 	Welch Two Sample t-test

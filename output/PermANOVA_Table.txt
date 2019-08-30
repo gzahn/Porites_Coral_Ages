@@ -8,10 +8,26 @@ Number of permutations: 999
 Terms added sequentially (first to last)
 
                    Df SumsOfSqs MeanSqs F.Model      R2 Pr(>F)   
-meta_aged$Location  4     2.148 0.53692 1.56253 0.06776  0.003 **
-meta_aged$CoralAge  1     0.340 0.33965 0.98844 0.01072  0.429   
+meta_aged$Location  4     2.148 0.53692 1.56253 0.06776  0.002 **
+meta_aged$CoralAge  1     0.340 0.33965 0.98844 0.01072  0.421   
 Residuals          85    29.208 0.34362         0.92152          
 Total              90    31.695                 1.00000          
 ---
 Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 [1] "Location is a significant factor in bacterial community structure. Coral age is not."
+
+Call:
+adonis(formula = otu ~ meta$Location) 
+
+Permutation: free
+Number of permutations: 999
+
+Terms added sequentially (first to last)
+
+               Df SumsOfSqs MeanSqs F.Model      R2 Pr(>F)    
+meta$Location   7      7.03  1.0043  2.9093 0.11815  0.001 ***
+Residuals     152     52.47  0.3452         0.88185           
+Total         159     59.50                 1.00000           
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+[1] "When ALL islands are included in the model, location is still a significant factor."
