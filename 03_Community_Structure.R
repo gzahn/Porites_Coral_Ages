@@ -188,11 +188,13 @@ ggsave("./output/figs/NMDS_Location_Jaccard.png",dpi=300,height = 8,width = 8)
 
 # ADONIS ####
 
-perm.mod <- adonis(otu_aged ~ meta_aged$Location + meta_aged$CoralAge)
-
+perm.mod1 <- adonis(otu_aged ~ meta_aged$Location * meta_aged$CoralAge)
+perm.mod2 <- adonis(otu ~ meta$Location)
 sink("./output/PermANOVA_Table.txt")
-perm.mod
+perm.mod1
 print("Location is a significant factor in bacterial community structure. Coral age is not.")
+perm.mod2
+print("When ALL islands are included in the model, location is still a significant factor.")
 sink(NULL)
 
 # Network plot ####
