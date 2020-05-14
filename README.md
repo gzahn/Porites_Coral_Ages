@@ -1,4 +1,4 @@
-# _Porites lutea_ bacteria with coral ages and genotypes
+# Host age is not a consistent predictor of microbial diversity in the coral _Porites lutea_
 
 ### R scripts for data processing and analyses _(in this order)_
 
