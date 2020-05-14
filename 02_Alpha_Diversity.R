@@ -388,11 +388,11 @@ ggsave("./output/figs/tonermap.png",dpi=300,height = 8, width = 10)
 
 # Number of ESVs per colony
 
-pa <- decostand(otu_table(ps),method = "pa")
-meta$ESV_Count <- rowSums(pa)
+
+meta$ReadCount <- rowSums(otu_table(ps))
 meta$Richness <- richness
 names(meta)
-colkeepers <- c("Library ID","Location","CoralAge","GPS","Genotype","LAT","LON","Richness")
+colkeepers <- c("Library ID","Location","CoralAge","GPS","Genotype","LAT","LON","Richness","ReadCount")
 meta_concise <- meta %>% select(colkeepers)
 write.csv(meta_concise,"./output/SampleData_with_ESVRichness.csv",quote = FALSE,row.names = FALSE)
 
