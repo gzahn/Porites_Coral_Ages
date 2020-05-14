@@ -1,8 +1,28 @@
-# Combine data with 
+# --------------------------------------------------------------#
+# Porites 16S Analyses - Depends on "01_Process_Raw_Reads.R"
+# and "01_Cleanup_Processed_Data.R"
+#
+# Combine P luteus data with previously published P. acuta 
+# microbiome data from same sites - Define and investigate
+# core bacterial microbiome of both host corals
+#
+# Author: Geoffrey Zahn
+# --------------------------------------------------------------#
+
+
+
 # Packages
 library(phyloseq)
 library(tidyverse)
 library(vegan)
+# library(devtools) # Load the devtools package
+# install_github("microbiome/microbiome") # Install the package
+library(microbiome)
+library(RColorBrewer)
+
+# functions
+source("./R/plot_bar2.R")
+
 
 # Load data ####
 pluteus <- readRDS("./output/phyloseq_object_16S_cleaned.RDS")
@@ -37,7 +57,7 @@ sample_data(ps)$ReadDepth <- rowSums(otu_table(ps))
 
 # Collapse based on taxonomy at genus level ####
 ps2 = tax_glom(ps,taxrank = rank_names(ps)[6])
-
+?tax_glom
 
 # Remove low-abundance OTUs ####
 
@@ -120,6 +140,123 @@ ggplot(df.shared.taxa) + geom_bar(aes(x=reorder(Order,Order,function(x)-length(x
 ggsave("./output/figs/Shared_Genera_Pacuta-Plutea_within_each-order.png",dpi=300)
 
 
+
 # PermANOVA ####
 mod1 <- adonis(otu_table(ps) ~ sample_data(ps)$Species + sample_data(ps)$ReadDepth)
 mod1
+
+
+
+# Core Microbiome(s) ####
+pluteus # P. luteus ... this study
+pacuta # P. acuta ... previous study
+ps # Combined Pluteus and Pacuta
+ps2 # combined and taxa merged to genus level
+
+
+# Let's start with a heatmap of all genera relative abundance in full merged dataset
+ps2_ra <- transform_sample_counts(ps2,function(x) x/sum(x))
+cols = plyr::mapvalues(ps2@sam_data$Species,from=unique(ps2@sam_data$Species),to=c("Blue","Red"))
+
+    # Blue = P luteus, Red = P acuta
+    heatmap((as.matrix(otu_table(ps2_ra))),Rowv = NA,RowSideColors = cols,Colv = NA, labRow = NA, col = gray.colors(20),labCol = NA)
+
+# ... Not very helpful...try to find the core of each host, then merge
+
+# Compositional versions of the data sets, individually, and combined...
+ps2.rel <- microbiome::transform(ps2, "clr")
+head(prevalence(ps2.rel, detection = 0.01, sort = TRUE))
+
+ps.rel <- microbiome::transform(ps, "compositional")
+pluteus.rel <- microbiome::transform(pluteus, "compositional")
+pacuta.rel <- microbiome::transform(pacuta, "compositional")
+
+# tax-glommed to genus level
+pluteus2 <- tax_glom(pluteus,taxrank = rank_names(ps)[6])
+pluteus2.rel <- comp_transform(pluteus2, "compositional")
+
+pacuta2 <- tax_glom(pacuta,taxrank = rank_names(ps)[6])
+pacuta2.rel <- microbiome::transform(pacuta2, "compositional")
+
+    # Examine core thresholds:
+prevalences <- seq(.05, .5, .05)
+detections <- 10^seq(log10(1e-3), log10(.2), length = 10)
+
+# Investigate visually
+plot_core(ps2.rel, prevalences = prevalences, detections = detections, plot.type = "lineplot") + xlab("Relative Abundance (%)")
+ggsave("./output/figs/core_lineplot_thresholds_full.png")
+
+plot_core(ps2.rel, plot.type = "heatmap", 
+               prevalences = prevalences,
+               detections = detections,
+               colours = rev(brewer.pal(5, "Spectral")),
+               min.prevalence = .1, horizontal = TRUE) +
+  theme(axis.text.x = element_blank())
+ggsave("./output/figs/core_heatmap_thresholds_full.png", dpi=300)
+
+plot_core(pacuta2.rel, prevalences = prevalences, detections = detections, plot.type = "lineplot") + xlab("Relative Abundance (%)")
+
+
+
+# Define core as prevalence = 0.5, detection threshold = 0.1% relabund
+ps2.core <- core(ps2.rel, detection = 0.001,prevalence = 0.5, include.lowest = TRUE)
+
+# Same for separate host coral species...and for non-glommed full taxa
+pluteus.core <- core(pluteus2.rel, detection = 0.001,prevalence = 0.5, include.lowest = TRUE)
+pacuta.core <- core(pacuta2.rel, detection = 0.001,prevalence = 0.5, include.lowest = TRUE)
+    # remove phy_tree for convenience
+pacuta.core <- phyloseq(otu_table(pacuta.core),tax_table(pacuta.core),sample_data(pacuta.core))
+
+full_core <- core(ps.rel, detection = 0.001,prevalence = 0.5, include.lowest = TRUE) # error
+
+# No shared core taxa (ESVs) between both species of corals unless merged to genus level!
+
+tax <- merge_phyloseq_pair(pacuta.core@tax_table,pluteus.core@tax_table)
+otu <- merge_phyloseq_pair(pacuta.core@otu_table,pluteus.core@otu_table)
+
+
+
+# Make new sample data frame
+Species = c(as.character(pacuta.core@sam_data$Species), pluteus.core@sam_data$Species)
+Location = c(pacuta.core@sam_data$Location,pluteus.core@sam_data$Location)
+SampleNames = c(as.character(pacuta.core@sam_data$SampleID), pluteus@sam_data$SampleID)
+IDs = c(as.character(pacuta.core@sam_data$SampleName),as.character(pluteus.core@sam_data$`Library ID`))
+
+sam = data.frame(SampleID,Species,Location,row.names = IDs)
+
+# Merge phyloseq objects manually
+ps.core_ra <- phyloseq(otu_table(otu),tax_table(tax),sample_data(sam))
+
+# Merge samples based on location AND species
+newvar = paste0(ps.core_ra@sam_data$Species,"_",ps.core_ra@sam_data$Location)
+ps.core_ra@sam_data$NewVar <- newvar
+ps.core.location <- merge_samples(ps.core_ra,group = "NewVar",fun = "mean")
+# repair merged sample data
+spp = unlist(map(str_split(sample_names(ps.core.location),"_"),1))
+loc = unlist(map(str_split(sample_names(ps.core.location),"_"),2))
+
+ps.core.location@sam_data$Location <- loc
+ps.core.location@sam_data$Species <- spp
+
+ps.core.location.ra <- transform_sample_counts(ps.core.location,function(x) x/sum(x))
+plot_bar(ps.core.location.ra,fill="Family") + facet_wrap(~Location)
+
+# remove locations where both species weren't collected
+ps.core.compare <- subset_samples(ps.core.location.ra, !Location %in% c("St John","Tanah Merah","TPT"))
+
+# Barplot
+plot_bar(ps.core.compare,x="sample_Species",fill="Class") + facet_grid(~Location) +
+  theme_bw() + theme(axis.text.x = element_text(face = "italic",angle=90)) +
+  labs(x="Host species",y="Relative abundance")
+ggsave("./output/figs/Core_Class_relabund_by_coral-species_and_Location.png",dpi=300,width = 10,height = 6)
+
+# Heatmap of core genera of both host coral species
+sp.cols <- c(rep("Red",97),rep("Blue",160)) # Blue = P luteus, Red = P acuta
+heatmap(t(as(otu,"matrix")),col=gray.colors(10),
+        Rowv = NA,ColSideColors = sp.cols,Colv = NA,labCol = NA,
+        labRow = tax[,6],margins = c(5,5))
+# No real overlap in core microbiome between coral hosts, as defined here!
+
+
+
+# Should I build core microbiome for each sampling location???

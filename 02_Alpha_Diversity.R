@@ -1,9 +1,12 @@
-# ------------------------------------------------------------------------#
-# Porites 16S Analyses - Alpha diversity analyses
-# Depends on "00_Process_Raw_Reads.R" and "01_Cleanup_Processed_Data.R"
-# 
+# -------------------------------------------------------------------#
+# Porites 16S Analyses - Depends on "01_Process_Raw_Reads.R"
+# and "01_Cleanup_Processed_Data.R"
+#
+# Investigate Alpha Diversity of bacteria associated with P lutea
+#
 # Author: Geoffrey Zahn
-# ------------------------------------------------------------------------#
+# -------------------------------------------------------------------#
+
 
 # Load packages and functions ####
 library(phyloseq)
@@ -18,7 +21,6 @@ library(lme4)
 library(patchwork)
 library(ggmap)
 library(maps)
-library(rsq)
 
 # functions
 source("./R/plot_bar2.R")
@@ -55,28 +57,12 @@ shannon = diversity(otu,index = "shannon")
 richness = specnumber(otu)
 simpson = diversity(otu,index = "simpson")
 
-# Does genotype affect bacterial alpha diversity? ####
-mod.gen <- aov(shannon ~ meta$Genotype)
-summary(mod.gen)
-
-# Write t-test results to file
-
-sink("./output/alpha_div_vs_genotype_t-test_tables.txt")
-print("Shannon Diversity")
-t.test(shannon ~ meta$Genotype)
-print("Species Richness")
-t.test(richness ~ meta$Genotype)
-print("Simpson Diversity")
-t.test(simpson ~ meta$Genotype)
-sink(NULL)
-
-
 # Does bacterial richness change with coral age? ####
 aged = !is.na(meta$CoralAge)
 
 mean.ages <- meta %>% group_by(Location) %>% drop_na(CoralAge) %>%
   summarise(MeanCoralAge=mean(CoralAge))
-mean.ages
+
 
 mod = aov(richness[aged] ~ CoralAge * Location, data = meta[aged,])
 summary(mod) # probable interaction between coral age and location
@@ -89,15 +75,12 @@ p1 <- ggplot(meta[aged,],aes(x=CoralAge,y=richness[aged])) +
   labs(x="Coral Age (years)",y="ESV Richness") + theme(axis.title = element_text(face="bold",size = 14))
 ggsave(p1,filename = "./output/figs/RichnessLinear_Fit.png",dpi=300,device = "png")
 
-names(meta)
 # explore models
 meta.div <- cbind(meta,shannon,simpson,richness)
 mod1 = glm(data = meta.div, richness ~ CoralAge*Location)
 mod2 = glm(data = meta.div, richness ~ CoralAge+Location)
 mod3 = glm(data = meta.div, richness ~ ns(CoralAge,2)*Location)
-mod4 = glm(data = meta.div, richness ~ CoralAge*Genotype)
-
-summary(mod4)
+# mod4 = lmer(data = meta.div, richness ~ CoralAge * (1|Location))
 
 grid <- meta.div[aged,] %>% 
   data_grid(CoralAge,Location) %>% 
@@ -127,9 +110,7 @@ ggsave(p2,filename = "./output/figs/ShannonLinear_Fit.png",dpi=300,device = "png
 mod1 = glm(data = meta.div, shannon ~ CoralAge*Location)
 mod2 = glm(data = meta.div, shannon ~ CoralAge+Location)
 mod3 = glm(data = meta.div, shannon ~ ns(CoralAge,2)*Location)
-mod4 = glm(data = meta.div, shannon ~ CoralAge*Genotype)
-mod5 = glm(data = meta.div, shannon ~ CoralAge+Genotype)
-
+# mod4 = lmer(data = meta.div, shannon ~ CoralAge * (1|Location))
 
 grid <- meta.div[aged,] %>% 
   data_grid(CoralAge,Location) %>% 
@@ -141,28 +122,11 @@ ggplot(meta.div[aged,], aes(x=CoralAge, y=shannon,group=Location,color=Location)
   facet_wrap(~ model) + theme_bw() + scale_color_manual(values=pal)
 ggsave("./output/figs/ShannonModel_Comparison.png",dpi=300)
 
-grid <- meta.div[aged,] %>% 
-  data_grid(CoralAge,Genotype) %>% 
-  gather_predictions(mod4, mod5)
-
-ggplot(meta.div[aged,], aes(x=CoralAge, y=shannon,group=Genotype,color=Genotype)) + 
-  geom_point() +
-  geom_line(data = grid,aes(y=pred)) +
-  facet_wrap(~ model) + theme_bw() + scale_color_manual(values=pal)
-
-summary(mod5)
-
 # Plot residuals
 gather_residuals(meta.div[aged,],mod1,mod2,mod3) %>%
   ggplot(aes(x=CoralAge,y=resid,color=Location)) + geom_point() + geom_ref_line(h=0,size = .5,colour = "Black") +
   facet_grid(model~Location) + theme_bw() + scale_color_manual(values=pal)
 ggsave("./output/figs/ShannonModel_Residuals.png",dpi=300)
-
-# for genotype models
-gather_residuals(meta.div[aged,],mod4,mod5) %>%
-  ggplot(aes(x=CoralAge,y=resid,color=Genotype)) + geom_point() + geom_ref_line(h=0,size = .5,colour = "Black") +
-  facet_grid(model~Genotype) + theme_bw() + scale_color_manual(values=pal)
-
 
                     # Simpson
 p3 <- ggplot(meta[aged,],aes(x=CoralAge,y=simpson[aged])) + 
@@ -208,30 +172,6 @@ ggsave("./output/figs/AlphaDiversity_over_CoralAge.png",dpi=300,height = 8,width
 # Best models:
 mod <- glm(richness ~ CoralAge*Location,data = meta.div)
 summary(mod)
-rsq(mod,adj = TRUE)
-
-genotyped <- !is.na(meta.div$Genotype)
-
-mod.geno = glm(shannon ~ CoralAge*Genotype,data = meta.div[genotyped,])
-summary(mod.geno)
-rsq(mod.geno,adj = TRUE)
-
-pred <- add_predictions(meta.div[aged,],mod.geno)
-!is.na(pred$Genotype)
-
-ggplot(meta.div[aged,][!is.na(pred$Genotype),], aes(x=CoralAge,y=shannon,color=Genotype,group=Genotype)) +
-  geom_point(alpha=.25) + geom_line(aes(y=pred$pred[!is.na(pred$Genotype)]),size=1) + theme_bw() +
-  scale_color_manual(values=pal) + ggtitle("Age*Genotype Model Predictions") + 
-  labs(x="Coral Age (Years)",y="ESV Shannon Diversity",subtitle = paste0("Points are observed values; Adj. R-sq = ",signif(rsq(mod.geno,adj = TRUE),4))) +
-  theme(axis.title = element_text(face="bold",size=12),
-        axis.text = element_text(face="bold"),
-        legend.title = element_text(face="bold",size=12))
-ggsave("./output/figs/Model_Fit_Age-Genotype_ShannonDiv.png",dpi=300,height = 8,width = 10)
-
-
-
-
-
 mod2 <- lmer(richness ~ CoralAge/Location + (1|Location), data = meta.div)
 summary(mod2)
 pred <- add_predictions(meta.div[aged,],mod2)
@@ -240,21 +180,13 @@ pred <- add_predictions(meta.div[aged,],mod2)
 # lmer model residual plot
 ggplot(meta.div[aged,],aes(x=CoralAge,y=residuals(mod2))) + geom_point() + geom_hline(yintercept = 0)
 
-# Plot lmer predictions ####
 ggplot(meta.div[aged,], aes(x=CoralAge,y=richness,color=Location,group=Location)) +
   geom_point(alpha=.25) + geom_line(aes(y=pred$pred),size=1) + theme_bw() +
   scale_color_manual(values=pal) + ggtitle("Mixed-Effect Model Predictions") + 
-  labs(x="Coral Age (Years)",y="ESV Richness",subtitle = "Points are observed values") +
-  theme(axis.title = element_text(face="bold",size=12),
-        axis.text = element_text(face="bold"),
-        legend.title = element_text(face="bold",size=12))
+  labs(x="Coral Age (Years)",y="ESV Richness",subtitle = "Points are observed values")
 ggsave("./output/figs/lmer_model_predictions_richness_v_age.png",dpi=300, width = 8,height = 10)
 
-
-
-
 # Barplots of diversity ####
-
 # Load raw data
 ps <- readRDS("./output/phyloseq_object_16S_cleaned.RDS")
 summary(colSums(otu_table(ps)))
@@ -289,10 +221,7 @@ tax_table(ps.Age.ra)[,2][is.na(tax_table(ps.Age.ra)[,2])] <- "Unassigned"
 
 plot_bar2(ps.Location.ra,fill = "Phylum") + theme_bw() +
   scale_fill_manual(values=pal) +
-  labs(y="Relative Abundance",x="Site") + 
-  theme(axis.text.x = element_text(angle=90,face="bold"),
-        axis.title = element_text(face="bold",size = 12),
-        legend.title = element_text(face="bold",size=12))
+  labs(x="Relative Abundance",y="Site")
 ggsave("./output/figs/Barplot_Phylum_Location.png",height = 10,width = 12,dpi=300)
 
 plot_bar2(ps.Age.ra,fill = "Phylum") + theme_bw() +
@@ -301,44 +230,14 @@ plot_bar2(ps.Age.ra,fill = "Phylum") + theme_bw() +
                             "41 to 50","51 to 60","61 to 70",
                             "81 to 90","82 to 90","91 to 100",
                             "101 to 110")) + 
-  labs(x="Age Class",y="Relative Abundance") +
-  theme(axis.text.x = element_text(angle=90,face="bold",size=10),
-        legend.title = element_text(face="bold",size=12),
-        axis.title = element_text(size=12,face="bold"))
-
+  labs(x="Age Class",y="Relative Abundance")
 ggsave("./output/figs/Barplot_Phylum_AgeClass.png",height = 10,width = 12,dpi=300)
-
-
-# Boxplots of alpha diversity
-ggplot(meta.div[meta.div$Location %in% c("Jong","Kusu","Raffles Lighthouse","Semakau","Sisters"),],
-       aes(x=CoralAgeBinned,y=shannon,color=CoralAgeBinned)) + 
-  geom_boxplot() + theme_bw() + labs(color="Coral age group",x="Coral age group",y="Shannon diversity") +
-  facet_wrap(~Location) + theme(axis.text.x = element_text(angle=90),
-                                legend.title = element_text(size=12,face="bold"),
-                                axis.title = element_text(size=12,face="bold"),strip.text = element_text(face="bold")) +
-  scale_x_discrete(limits=c("10 to 20","21 to 30","31 to 40",
-                            "41 to 50","51 to 60","61 to 70",
-                            "81 to 90","82 to 90","91 to 100",
-                            "101 to 110"))
-ggsave("./output/figs/Shannon_Diversity_Boxplot_by_Age_and_Location.png", dpi=300, height = 8,width = 10)
-
-ggplot(meta.div[meta.div$Location %in% c("Jong","Kusu","Raffles Lighthouse","Semakau","Sisters"),],
-       aes(x=CoralAgeBinned,y=richness,color=CoralAgeBinned)) + 
-  geom_boxplot() + theme_bw() + labs(color="Coral age group",x="Coral age group",y="Shannon diversity") +
-  facet_wrap(~Location) + theme(axis.text.x = element_text(angle=90),
-                                legend.title = element_text(size=12,face="bold"),
-                                axis.title = element_text(size=12,face="bold"),strip.text = element_text(face="bold")) +
-  scale_x_discrete(limits=c("10 to 20","21 to 30","31 to 40",
-                            "41 to 50","51 to 60","61 to 70",
-                            "81 to 90","82 to 90","91 to 100",
-                            "101 to 110"))
-ggsave("./output/figs/Richness_Boxplot_by_Age_and_Location.png", dpi=300, height = 8,width = 10)
 
 
 
 
 # Maps of site locations ####
-register_google(key = "???????????????????????????????")
+register_google(key = "AIzaSyDjTK7ZjYKGr1nE5PmaSncAg4g9L913C_o")
 maplocation <- c(lon = mean(ps@sam_data$LON), lat = mean(ps@sam_data$LAT))
 mygooglemap <- get_googlemap(center = maplocation,
               zoom = 11, scale = 2,
@@ -364,11 +263,3 @@ ggmap(mytonermap2) +
   scale_color_manual(values=pal) + labs(x="Longitude",y="Latitude")
 ggsave("./output/figs/tonermap.png",dpi=300,height = 8, width = 10)
 
-
-# Rarefaction curve ####
-ps <- readRDS("./output/phyloseq_object_16S_cleaned.RDS")
-otu_raw = as(otu_table(ps),"matrix")
-
-png("./output/figs/Rarefaction_Curve.png")
-rarecurve(otu_raw,label = FALSE,step = 500)
-dev.off()

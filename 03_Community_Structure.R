@@ -1,10 +1,12 @@
-# --------------------------------------------------------------#
+# -----------------------------------------------------------------------------------#
 # Porites 16S Analyses - Beta diversity and community structure
 # 
-# Depends on "01_Process_Raw_Reads.R"
+# Depends on "00_Process_Raw_Reads.R" and "01_Cleanup_Processed_Data.R"
+#
+# Investigate Beta Diversity along geographic, genotype, and age variation of hosts
 # 
 # Author: Geoffrey Zahn
-# --------------------------------------------------------------#
+# -----------------------------------------------------------------------------------#
 
 # Load packages, functions, and data ####
 library(phyloseq)
@@ -163,64 +165,58 @@ set.seed(13)
 plot_network(ig, physeq = ps_ra, color = "Location",label = NULL,point_size = 2)
 ggsave("./output/figs/Network_Jaccard.png", dpi=300, height = 12, width = 18)
 
-
-# Core microbiome ####
-
-# find core members of oral microbiome ####
-# Core with compositionals:
-det <- c(0, 0.1, 0.5, 2, 5, 20)/100
-prevalences <- seq(.05, 1, .05)
-plot_core(ps_ra, prevalences = prevalences, detections = det, plot.type = "lineplot") + xlab("Relative Abundance")
-ggsave("./output/figs/CoreSize_vs_RelativeAbundance.png", dpi = 300)
-
-detections <- 10^seq(log10(1e-3), log10(.2), length = 10)
-
-# Also define gray color palette
-gray <- gray(seq(0,1,length=10))
-plot_core(ps_ra, plot.type = "heatmap", colours = gray,
-               prevalences = prevalences, detections = detections) +
-  xlab("Detection Threshold (Relative Abundance (%))")
-print(p)    
-
-
-# Core heatmap
-prevalences <- seq(.05, .5, .05)
-detections <- 10^seq(log10(1e-3), log10(.2), length = 10)
-
-p <- plot_core(ps_ra, plot.type = "heatmap", 
-               prevalences = prevalences,
-               detections = detections,
-               colours = rev(brewer.pal(5, "Spectral")),
-               min.prevalence = .1, horizontal = TRUE)
-print(p)
-ggsave("./16S/output/Core_Heatmap.png", dpi=300)
-
-# prevalence
-taxa_prevalence = (prevalence(ps_ra, detection = 0.001, sort = TRUE))
-
-# core members at >= 0.2 sample prevalence 0.01% detection threshold
-core.taxa.standard <- core_members(ps_ra, detection = 0.001, prevalence = .1)
-
-# Total core abundance in each sample (sum of abundances of the core members):
-ps_core <- core(ps_ra, detection = 0.001, prevalence = .1)
-# subset to only samples containing core microbiome
-ps_core_samples = subset_samples(ps_core,rowSums(otu_table(ps_core)) > 0)
-
-nmds_core = ordinate(ps_core_samples, "NMDS")
-plot_ordination(ps_core_samples, nmds_core, color = "Diet") +
-  stat_ellipse()
-
-# coral age vs community structure
-# plot the unbinned coral age against ESV richness or something similar
-
-# In addition to all the stuff you did before can you do an 
-# ordination coloured by binned age, and a separate ordination 
-# coloured by the average LE (mm) rate? 
-# Essentially what I’m trying to see is whether or not age or growth rate 
-# structure bacterial community in addition to the the standard biogeog stuff we have been doing.
-# x=age,y=richness,facet=location
-
-
-dim(otu_table(ps_ra))
-dim(sample_data(ps_ra))
-adonis((otu_table(ps_ra)) ~ ps_ra@sam_data$CoralAgeBinned)
+# 
+# # Core microbiome ####
+# 
+# # find core members of oral microbiome ####
+# detections <- 10^seq(log10(1e-3), log10(.2), length = 10)
+# 
+# # Also define gray color palette
+# gray <- gray(seq(0,1,length=10))
+# plot_core(ps_ra, plot.type = "heatmap", colours = gray,
+#                prevalences = prevalences, detections = detections) +
+#   xlab("Detection Threshold (Relative Abundance (%))")
+# print(p)    
+# 
+# 
+# # Core heatmap
+# prevalences <- seq(.05, .5, .05)
+# detections <- 10^seq(log10(1e-3), log10(.2), length = 10)
+# 
+# p <- plot_core(ps_ra, plot.type = "heatmap", 
+#                prevalences = prevalences,
+#                detections = detections,
+#                colours = rev(brewer.pal(5, "Spectral")),
+#                min.prevalence = .1, horizontal = TRUE)
+# print(p)
+# ggsave("./16S/output/Core_Heatmap.png", dpi=300)
+# 
+# # prevalence
+# taxa_prevalence = (prevalence(ps_ra, detection = 0.001, sort = TRUE))
+# 
+# # core members at >= 0.2 sample prevalence 0.01% detection threshold
+# core.taxa.standard <- core_members(ps_ra, detection = 0.001, prevalence = .1)
+# 
+# # Total core abundance in each sample (sum of abundances of the core members):
+# ps_core <- core(ps_ra, detection = 0.001, prevalence = .1)
+# # subset to only samples containing core microbiome
+# ps_core_samples = subset_samples(ps_core,rowSums(otu_table(ps_core)) > 0)
+# 
+# nmds_core = ordinate(ps_core_samples, "NMDS")
+# plot_ordination(ps_core_samples, nmds_core, color = "Diet") +
+#   stat_ellipse()
+# 
+# # coral age vs community structure
+# # plot the unbinned coral age against ESV richness or something similar
+# 
+# # In addition to all the stuff you did before can you do an 
+# # ordination coloured by binned age, and a separate ordination 
+# # coloured by the average LE (mm) rate? 
+# # Essentially what I’m trying to see is whether or not age or growth rate 
+# # structure bacterial community in addition to the the standard biogeog stuff we have been doing.
+# # x=age,y=richness,facet=location
+# 
+# 
+# dim(otu_table(ps_ra))
+# dim(sample_data(ps_ra))
+# adonis((otu_table(ps_ra)) ~ ps_ra@sam_data$CoralAgeBinned)
