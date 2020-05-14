@@ -1,0 +1,119 @@
+[1] "Family-level taxonomic comparisons..."
+[1] "No sig. diffs in dispersion for these taxa, but differences in abundance are shown below:"
+$Proteobacteria_Gammaproteobacteria_Pseudomonadales_Moraxellaceae
+
+Call:
+bbdml(formula = formula_i, phi.formula = phi.formula, data = data_i, 
+    link = link, phi.link = phi.link, inits = inits)
+
+
+Coefficients associated with abundance:
+                         Estimate Std. Error t value Pr(>|t|)    
+(Intercept)             -2.852685   0.044646 -63.895  < 2e-16 ***
+CoralAgeBinned10 to 20   1.131116   0.471495   2.399 0.019068 *  
+CoralAgeBinned21 to 30   0.995463   0.262154   3.797 0.000305 ***
+CoralAgeBinned31 to 40   0.536381   0.415625   1.291 0.201051    
+CoralAgeBinned41 to 50   0.003316   0.509774   0.007 0.994828    
+CoralAgeBinned51 to 60   1.626592   0.504183   3.226 0.001898 ** 
+CoralAgeBinned61 to 70   0.786570   0.060813  12.934  < 2e-16 ***
+CoralAgeBinned81 to 90  -0.494897   0.070489  -7.021 1.08e-09 ***
+CoralAgeBinned82 to 90   1.342485   0.059390  22.605  < 2e-16 ***
+CoralAgeBinned91 to 100 -0.968054   0.070897 -13.654  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
+Coefficients associated with dispersion:
+                        Estimate Std. Error t value Pr(>|t|)
+(Intercept)              -13.136     10.305  -1.275    0.207
+CoralAgeBinned10 to 20    12.793     10.316   1.240    0.219
+CoralAgeBinned21 to 30    11.852     10.310   1.150    0.254
+CoralAgeBinned31 to 40    12.506     10.315   1.212    0.229
+CoralAgeBinned41 to 50    11.782     10.321   1.142    0.257
+CoralAgeBinned51 to 60    12.713     10.318   1.232    0.222
+CoralAgeBinned61 to 70    -3.903     93.026  -0.042    0.967
+CoralAgeBinned81 to 90    -4.369     88.942  -0.049    0.961
+CoralAgeBinned82 to 90    -4.886    175.640  -0.028    0.978
+CoralAgeBinned91 to 100   -4.841     90.802  -0.053    0.958
+
+
+Log-likelihood: -641.72
+
+$Proteobacteria_Gammaproteobacteria_Pseudomonadales_Pseudomonadaceae
+
+Call:
+bbdml(formula = formula_i, phi.formula = phi.formula, data = data_i, 
+    link = link, phi.link = phi.link, inits = inits)
+
+
+Coefficients associated with abundance:
+                        Estimate Std. Error t value Pr(>|t|)    
+(Intercept)             -1.76243    0.02847 -61.902  < 2e-16 ***
+CoralAgeBinned10 to 20  -0.73208    0.34881  -2.099 0.039394 *  
+CoralAgeBinned21 to 30  -0.62316    0.33893  -1.839 0.070150 .  
+CoralAgeBinned31 to 40  -1.34589    0.39977  -3.367 0.001231 ** 
+CoralAgeBinned41 to 50  -0.73258    0.44988  -1.628 0.107868    
+CoralAgeBinned51 to 60  -2.15936    0.61618  -3.504 0.000797 ***
+CoralAgeBinned61 to 70   0.62835    0.04165  15.088  < 2e-16 ***
+CoralAgeBinned81 to 90  -1.38238    0.05725 -24.148  < 2e-16 ***
+CoralAgeBinned82 to 90  -0.49163    0.05878  -8.364 3.53e-12 ***
+CoralAgeBinned91 to 100 -2.61979    0.07766 -33.735  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
+Coefficients associated with dispersion:
+                        Estimate Std. Error t value Pr(>|t|)
+(Intercept)              -14.448     19.585  -0.738    0.463
+CoralAgeBinned10 to 20    12.371     19.590   0.632    0.530
+CoralAgeBinned21 to 30    13.333     19.588   0.681    0.498
+CoralAgeBinned31 to 40    12.725     19.590   0.650    0.518
+CoralAgeBinned41 to 50    13.180     19.591   0.673    0.503
+CoralAgeBinned51 to 60    11.656     19.600   0.595    0.554
+CoralAgeBinned61 to 70    -2.770    102.974  -0.027    0.979
+CoralAgeBinned81 to 90    -3.078     91.460  -0.034    0.973
+CoralAgeBinned82 to 90    -2.298     94.397  -0.024    0.981
+CoralAgeBinned91 to 100   -3.574     94.548  -0.038    0.970
+
+
+Log-likelihood: -598.82
+
+$Proteobacteria_Gammaproteobacteria_Betaproteobacteriales_Burkholderiaceae
+
+Call:
+bbdml(formula = formula_i, phi.formula = phi.formula, data = data_i, 
+    link = link, phi.link = phi.link, inits = inits)
+
+
+Coefficients associated with abundance:
+                        Estimate Std. Error t value Pr(>|t|)    
+(Intercept)             -3.47113    0.05913 -58.707  < 2e-16 ***
+CoralAgeBinned10 to 20   1.48119    0.36036   4.110 0.000105 ***
+CoralAgeBinned21 to 30   1.43955    0.18626   7.729 5.32e-11 ***
+CoralAgeBinned31 to 40   1.15849    0.23719   4.884 6.20e-06 ***
+CoralAgeBinned41 to 50   0.32655    0.35753   0.913 0.364155    
+CoralAgeBinned51 to 60   1.33154    0.38493   3.459 0.000920 ***
+CoralAgeBinned61 to 70   1.80956    0.06903  26.215  < 2e-16 ***
+CoralAgeBinned81 to 90  -0.36191    0.09058  -3.995 0.000156 ***
+CoralAgeBinned82 to 90   1.62144    0.07370  22.001  < 2e-16 ***
+CoralAgeBinned91 to 100  2.89905    0.06142  47.204  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
+Coefficients associated with dispersion:
+                        Estimate Std. Error t value Pr(>|t|)
+(Intercept)              -13.485     12.203  -1.105    0.273
+CoralAgeBinned10 to 20    11.950     12.211   0.979    0.331
+CoralAgeBinned21 to 30    11.129     12.206   0.912    0.365
+CoralAgeBinned31 to 40    11.286     12.207   0.925    0.358
+CoralAgeBinned41 to 50    10.958     12.211   0.897    0.373
+CoralAgeBinned51 to 60    11.392     12.214   0.933    0.354
+CoralAgeBinned61 to 70    -3.710    100.742  -0.037    0.971
+CoralAgeBinned81 to 90    -3.868     82.999  -0.047    0.963
+CoralAgeBinned82 to 90    -3.619    110.960  -0.033    0.974
+CoralAgeBinned91 to 100   -4.537     93.240  -0.049    0.961
+
+
+Log-likelihood: -681.54
+

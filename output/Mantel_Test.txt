@@ -8,4 +8,4 @@ Simulated p-value: 0.001
 Alternative hypothesis: greater 
 
      Std.Obs  Expectation     Variance 
- 7.102623954 -0.001907233  0.001544214 
+7.0562542425 0.0004240692 0.0015385481 
