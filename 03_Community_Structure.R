@@ -203,8 +203,11 @@ sink(NULL)
 ig=make_network(ps_ra, max.dist = .8)
 set.seed(13)
 plot_network(ig, physeq = ps_ra, color = "Location",label = NULL,point_size = 2)
-ggsave("./output/figs/Network_Jaccard.png", dpi=300, height = 12, width = 18)
+ggsave("./output/figs/Network_Jaccard_Location.png", dpi=300, height = 12, width = 18)
 
+set.seed(13)
+plot_network(ig, physeq = ps_ra, color = "CoralAgeBinned",label = NULL,point_size = 2)
+ggsave("./output/figs/Network_Jaccard_CoralAge.png", dpi=300, height = 12, width = 18)
 
 # 
 # # Core microbiome ####
